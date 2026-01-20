@@ -12,6 +12,8 @@ export interface OutlineResponse {
   success: boolean
   outline?: string
   pages?: Page[]
+  mode?: 'outline' | 'poster'
+  poster_data?: any
   error?: string
 }
 
@@ -33,12 +35,16 @@ export interface FinishEvent {
 // 生成大纲（支持图片上传）
 export async function generateOutline(
   topic: string,
+  mode: 'outline' | 'poster' = 'outline',
+  style: 'sketch' | 'classic' = 'sketch',
   images?: File[]
 ): Promise<OutlineResponse & { has_images?: boolean }> {
   // 如果有图片，使用 FormData
   if (images && images.length > 0) {
     const formData = new FormData()
     formData.append('topic', topic)
+    formData.append('mode', mode)
+    formData.append('style', style)
     images.forEach((file) => {
       formData.append('images', file)
     })
@@ -47,6 +53,7 @@ export async function generateOutline(
       `${API_BASE_URL}/outline`,
       formData,
       {
+        params: { mode, style },
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -57,7 +64,9 @@ export async function generateOutline(
 
   // 无图片，使用 JSON
   const response = await axios.post<OutlineResponse>(`${API_BASE_URL}/outline`, {
-    topic
+    topic,
+    mode,
+    style
   })
   return response.data
 }
@@ -621,7 +630,8 @@ export async function generateImagesPost(
   onFinish: (event: FinishEvent) => void,
   onStreamError: (error: Error) => void,
   userImages?: File[],
-  userTopic?: string
+  userTopic?: string,
+  style: 'sketch' | 'classic' = 'sketch'
 ) {
   try {
     // 将用户图片转换为 base64
@@ -649,7 +659,8 @@ export async function generateImagesPost(
         task_id: taskId,
         full_outline: fullOutline,
         user_images: userImagesBase64.length > 0 ? userImagesBase64 : undefined,
-        user_topic: userTopic || ''
+        user_topic: userTopic || '',
+        style
       })
     })
 

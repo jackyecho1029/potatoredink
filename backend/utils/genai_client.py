@@ -81,6 +81,12 @@ class GenAIClient:
                 "base_url": base_url,
                 "api_version": "v1beta"
             }
+        else:
+             # 强制指定 public endpoint，防止 SDK 自动漂移到 Vertex AI
+             client_kwargs["http_options"] = {
+                "base_url": "https://generativelanguage.googleapis.com",
+                "api_version": "v1beta"
+            }
 
         # 默认使用 Gemini API (vertexai=False)，因为大多数用户使用 Google AI Studio 的 API Key
         # Vertex AI 需要 OAuth2 认证，不支持 API Key

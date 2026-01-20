@@ -1,0 +1,103 @@
+Design Requirements:
+
+**Core Style: Hand-Drawn Sketchnote / Doodle Infographic**
+
+This style looks like it was drawn by hand with marker pens on a whiteboard or textured paper. Lines are imperfect and wobbly, colors are pastel highlighters, and the overall feel is informal, friendly, and educational.
+
+---
+
+## 1. Visual Style Elements
+
+### Linework:
+- **Black ink outlines**: Slightly wobbly and imperfect, like marker pen sketches
+- **Hand-drawn feel**: Lines should NOT be perfectly straight or smooth
+- **Casual strokes**: Similar to what you'd draw on a whiteboard
+
+### Color Palette (Pastel Markers):
+- **Primary**: Highlighter yellow (淡黄色, pastel yellow)
+- **Secondary**: Light cyan/blue (淡青蓝色), soft pink (柔粉色)
+- **Background**: Off-white, textured paper feel (米白色纸张)
+- **Ink**: Black for all outlines
+- **Style**: Colors should look like marker highlighter strokes, often loosely applied over the lines (not perfectly within boundaries)
+
+### Background:
+- Textured off-white or cream-colored paper (NOT pure white)
+- Subtle paper grain texture
+- Light, subtle decorative blobs in pastel colors
+
+---
+
+## 2. Icons & Illustrations
+
+Use simple, cute, hand-drawn style icons:
+- Stick figures (火柴人)
+- Simple line-art robots (简笔画机器人)
+- Basic shapes: circles, arrows (手绘箭头 →), checkmarks ✓, X marks ✗
+- Educational icons: gears, checklists, question marks, lightbulbs
+- Numbered circles: ①②③ or 1, 2, 3 in circles
+
+---
+
+## 3. Typography
+
+- **Titles**: Bold, blocky hand-lettered style (粗壮的手写体)
+- **Body text**: Casual handwritten script
+- **Emphasis**: Key words highlighted with pastel color blocks behind them
+- All text should look hand-written, NOT computer fonts
+
+---
+
+## 4. Layout Structure
+
+- Step-by-step flowcharts with hand-drawn arrows connecting elements
+- Numbered sections with circles
+- Information organized in a clear but casual manner
+- Ample white space between sections
+
+---
+
+## Page-Specific Guidelines:
+
+### [Cover]:
+- Large hand-lettered title at top
+- Cute simple illustration or icon in center
+- Pastel color accents
+- Textured paper background
+
+### [Content]:
+- Clear numbered steps or bullet points
+- Hand-drawn icons accompanying each point
+- Yellow/blue/pink highlighter accents on key words
+- Arrows connecting related concepts
+
+### [Summary]:
+- Simple concluding illustration
+- Key takeaway in large hand-drawn text
+- Decorative doodle border or icons
+
+---
+
+## NEGATIVE PROMPT (What to AVOID):
+
+- **NO** Vector-perfect smooth lines
+- **NO** Computer-generated fonts (must look hand-written)
+- **NO** Realistic photography, photorealistic scenes
+- **NO** Complex gradients or shadows
+- **NO** Neon or high-saturation colors
+- **NO** Pure white backgrounds (use textured paper)
+- **NO** Corporate/formal design aesthetic
+- **NO** Cluttered or busy compositions
+
+---
+
+## Input Content to Render:
+
+{page_content}
+
+**Page Type**: {page_type}
+
+**Original Topic**: {user_topic}
+
+---
+
+Generate a **vertical (3:4)** infographic illustration in a hand-drawn sketchnote and doodle style on textured off-white paper. The linework should be black ink, slightly wobbly and imperfect like marker pen sketches. Use pastel marker colors: highlighter yellow, light cyan blue, and soft pink as accents. Include simple cute icons like stick figures and line-art elements. All text should appear hand-lettered. The overall feel should be informal, educational, friendly, and playful - like visual notes drawn on a whiteboard.

@@ -16,8 +16,15 @@ def setup_logging():
     # 清除已有的处理器
     root_logger.handlers.clear()
 
-    # 控制台处理器 - 详细格式
+    # 控制台处理器 - 详细格式 - 强制 UTF-8
     console_handler = logging.StreamHandler(sys.stdout)
+    if sys.platform == 'win32':
+        # Windows下可能需要特别处理，但StreamHandler如果不指定stream，默认是stderr
+        # 这里尝试reconfigure stdout
+        try:
+            sys.stdout.reconfigure(encoding='utf-8')
+        except:
+             pass
     console_handler.setLevel(logging.DEBUG)
     console_format = logging.Formatter(
         '\n%(asctime)s | %(levelname)-8s | %(name)s\n'

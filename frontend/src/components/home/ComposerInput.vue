@@ -13,7 +13,7 @@
         :value="modelValue"
         @input="handleInput"
         class="composer-textarea"
-        placeholder="输入主题，例如：秋季显白美甲..."
+        placeholder="输入长文/文章全文，AI 帮你总结提炼...（支持 text/markdown）"
         @keydown.enter.prevent="handleEnter"
         :disabled="loading"
         rows="1"

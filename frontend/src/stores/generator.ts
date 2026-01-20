@@ -38,6 +38,24 @@ export interface GeneratedContent {
   error?: string       // 错误信息
 }
 
+/**
+ * 营销海报数据结构
+ */
+export interface PosterSection {
+  icon: string
+  heading: string
+  content: string | string[]
+  style: 'positive' | 'negative' | 'neutral'
+}
+
+export interface PosterData {
+  title: string
+  subtitle: string
+  quote?: string
+  sections: PosterSection[]
+  summary?: string
+}
+
 export interface GeneratorState {
   // 当前阶段：input-输入主题, outline-编辑大纲, generating-生成中, result-查看结果
   stage: 'input' | 'outline' | 'generating' | 'result'
@@ -76,6 +94,15 @@ export interface GeneratorState {
   // 大纲生成状态：idle-未开始, generating-生成中, done-已完成, error-出错
   outlineStatus: 'idle' | 'generating' | 'done' | 'error'
 
+  // 当前模式：outline-标准图文, poster-营销海报
+  mode: 'outline' | 'poster'
+
+  // 当前风格：sketch-手绘, classic-经典
+  style: 'sketch' | 'classic'
+
+  // 海报结构化数据
+  posterData: PosterData | null
+
   // 最后一次保存到服务器的时间（ISO格式字符串）
   lastSavedAt: string | null
 }
@@ -109,6 +136,9 @@ function saveState(state: GeneratorState) {
       recordId: state.recordId,              // 历史记录ID
       content: state.content,                // 生成的内容（标题、文案、标签）
       outlineStatus: state.outlineStatus,    // 大纲生成状态
+      mode: state.mode,                      // 当前模式
+      style: state.style,                    // 当前风格
+      posterData: state.posterData,          // 海报数据
       lastSavedAt: state.lastSavedAt         // 最后保存时间
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
@@ -163,6 +193,15 @@ export const useGeneratorStore = defineStore('generator', {
       // 大纲生成状态
       outlineStatus: saved.outlineStatus || 'idle',
 
+      // 当前模式
+      mode: (saved.mode as any) || 'outline',
+
+      // 当前风格
+      style: (saved.style as any) || 'sketch',
+
+      // 海报数据
+      posterData: saved.posterData || null,
+
       // 最后保存时间
       lastSavedAt: saved.lastSavedAt || null
     }
@@ -185,8 +224,20 @@ export const useGeneratorStore = defineStore('generator', {
     setOutline(raw: string, pages: Page[]) {
       this.outline.raw = raw
       this.outline.pages = pages
+      this.mode = 'outline'
       this.stage = 'outline'
-      this.outlineStatus = 'done'  // 设置大纲为已完成状态
+      this.outlineStatus = 'done'
+    },
+
+    /**
+     * 设置海报数据
+     * @param data 海报结构化数据
+     */
+    setPosterData(data: PosterData) {
+      this.posterData = data
+      this.mode = 'poster'
+      this.stage = 'result' // 海报模式直接进入结果页预览
+      this.outlineStatus = 'done'
     },
 
     /**
@@ -432,6 +483,10 @@ export const useGeneratorStore = defineStore('generator', {
       // 重置大纲生成状态
       this.outlineStatus = 'idle'
 
+      // 重置模式和海报数据
+      this.mode = 'outline'
+      this.posterData = null
+
       // 清空最后保存时间
       this.lastSavedAt = null
 
@@ -572,6 +627,8 @@ export function setupAutoSave() {
       recordId: store.recordId,              // 历史记录ID
       content: store.content,                // 生成的内容
       outlineStatus: store.outlineStatus,    // 大纲生成状态
+      mode: store.mode,                      // 当前模式
+      posterData: store.posterData,          // 海报数据
       lastSavedAt: store.lastSavedAt         // 最后保存时间
     }),
     () => {

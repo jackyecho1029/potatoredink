@@ -67,9 +67,12 @@ class ImageService:
 
         logger.info(f"ImageService 初始化完成: provider={provider_name}, type={provider_type}")
 
-    def _load_prompt_template(self, short: bool = False) -> str:
+    def _load_prompt_template(self, short: bool = False, style: str = "sketch") -> str:
         """加载 Prompt 模板"""
-        filename = "image_prompt_short.txt" if short else "image_prompt.txt"
+        if short:
+            filename = "image_prompt_short.txt"
+        else:
+            filename = "image_prompt_classic.txt" if style == "classic" else "image_prompt_sketch.txt"
         prompt_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
             "prompts",
@@ -121,29 +124,18 @@ class ImageService:
         retry_count: int = 0,
         full_outline: str = "",
         user_images: Optional[List[bytes]] = None,
-        user_topic: str = ""
+        user_topic: str = "",
+        style: str = "sketch"
     ) -> Tuple[int, bool, Optional[str], Optional[str]]:
         """
         生成单张图片（带自动重试）
-
-        Args:
-            page: 页面数据
-            task_id: 任务ID
-            reference_image: 参考图片（封面图）
-            retry_count: 当前重试次数
-            full_outline: 完整的大纲文本
-            user_images: 用户上传的参考图片列表
-            user_topic: 用户原始输入
-
-        Returns:
-            (index, success, filename, error_message)
         """
         index = page["index"]
         page_type = page["type"]
         page_content = page["content"]
 
         try:
-            logger.debug(f"生成图片 [{index}]: type={page_type}")
+            logger.debug(f"生成图片 [{index}]: type={page_type}, style={style}")
 
             # 根据配置选择模板（短 prompt 或完整 prompt）
             if self.use_short_prompt and self.prompt_template_short:
@@ -154,8 +146,11 @@ class ImageService:
                 )
                 logger.debug(f"  使用短 prompt 模式 ({len(prompt)} 字符)")
             else:
-                # 完整 prompt 模式：包含大纲和用户需求
-                prompt = self.prompt_template.format(
+                # 加载对应风格的 Prompt 模板
+                template = self._load_prompt_template(short=False, style=style)
+                
+                # 完整 prompt 模式
+                prompt = template.format(
                     page_content=page_content,
                     page_type=page_type,
                     full_outline=full_outline,
@@ -216,7 +211,8 @@ class ImageService:
         task_id: str = None,
         full_outline: str = "",
         user_images: Optional[List[bytes]] = None,
-        user_topic: str = ""
+        user_topic: str = "",
+        style: str = "sketch"
     ) -> Generator[Dict[str, Any], None, None]:
         """
         生成图片（生成器，支持 SSE 流式返回）
@@ -228,6 +224,7 @@ class ImageService:
             full_outline: 完整的大纲文本（用于保持风格一致）
             user_images: 用户上传的参考图片列表（可选）
             user_topic: 用户原始输入（用于保持意图一致）
+            style: 风格 "sketch" | "classic"
 
         Yields:
             进度事件字典
@@ -235,7 +232,7 @@ class ImageService:
         if task_id is None:
             task_id = f"task_{uuid.uuid4().hex[:8]}"
 
-        logger.info(f"开始图片生成任务: task_id={task_id}, pages={len(pages)}")
+        logger.info(f"开始图片生成任务: task_id={task_id}, pages={len(pages)}, style={style}")
 
         # 创建任务专属目录
         self.current_task_dir = os.path.join(self.history_root_dir, task_id)
@@ -260,7 +257,11 @@ class ImageService:
             "cover_image": None,
             "full_outline": full_outline,
             "user_images": compressed_user_images,
-            "user_topic": user_topic
+            "cover_image": None,
+            "full_outline": full_outline,
+            "user_images": compressed_user_images,
+            "user_topic": user_topic,
+            "style": style
         }
 
         # ==================== 第一阶段：生成封面 ====================
@@ -295,7 +296,7 @@ class ImageService:
             # 生成封面（使用用户上传的图片作为参考）
             index, success, filename, error = self._generate_single_image(
                 cover_page, task_id, reference_image=None, full_outline=full_outline,
-                user_images=compressed_user_images, user_topic=user_topic
+                user_images=compressed_user_images, user_topic=user_topic, style=style
             )
 
             if success:
@@ -365,7 +366,8 @@ class ImageService:
                             0,  # retry_count
                             full_outline,  # 传入完整大纲
                             compressed_user_images,  # 用户上传的参考图片（已压缩）
-                            user_topic  # 用户原始输入
+                            user_topic,  # 用户原始输入
+                            style  # 风格
                         ): page
                         for page in other_pages
                     }
@@ -466,7 +468,8 @@ class ImageService:
                         0,
                         full_outline,
                         compressed_user_images,
-                        user_topic
+                        user_topic,
+                        style
                     )
 
                     if success:
@@ -537,6 +540,7 @@ class ImageService:
 
         reference_image = None
         user_images = None
+        style = "sketch"
 
         # 首先尝试从任务状态中获取上下文
         if task_id in self._task_states:
@@ -549,6 +553,7 @@ class ImageService:
             if not user_topic:
                 user_topic = task_state.get("user_topic", "")
             user_images = task_state.get("user_images")
+            style = task_state.get("style", "sketch")
 
         # 如果任务状态中没有封面图，尝试从文件系统加载
         if use_reference and reference_image is None:
@@ -566,7 +571,8 @@ class ImageService:
             0,
             full_outline,
             user_images,
-            user_topic
+            user_topic,
+            style
         )
 
         if success:

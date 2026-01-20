@@ -86,11 +86,17 @@ class OutlineService:
         logger.info(f"使用文本服务商: {active_provider} (type={provider_config.get('type')})")
         return get_text_chat_client(provider_config)
 
-    def _load_prompt_template(self) -> str:
+    def _load_prompt_template(self, mode: str = "outline", style: str = "sketch") -> str:
+        if mode == "poster":
+            filename = "poster_prompt.txt"
+        else:
+            # 根据风格选择大纲提示词
+            filename = "outline_prompt_classic.txt" if style == "classic" else "outline_prompt_sketch.txt"
+            
         prompt_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
             "prompts",
-            "outline_prompt.txt"
+            filename
         )
         with open(prompt_path, "r", encoding="utf-8") as f:
             return f.read()
@@ -132,103 +138,124 @@ class OutlineService:
     def generate_outline(
         self,
         topic: str,
-        images: Optional[List[bytes]] = None
+        images: Optional[List[bytes]] = None,
+        mode: str = "outline",
+        style: str = "sketch"
     ) -> Dict[str, Any]:
+        """
+        生成大纲或海报内容
+        
+        Args:
+            topic: 主题
+            images: 图片列表 (bytes)
+            mode: 模式 "outline" 或 "poster"
+            style: 风格 "sketch" (手绘) 或 "classic" (经典)
+            
+        Returns:
+            Dict matching OutlineResponse schema
+        """
         try:
-            logger.info(f"开始生成大纲: topic={topic[:50]}..., images={len(images) if images else 0}")
-            prompt = self.prompt_template.format(topic=topic)
+            # 防御性检查：确保 images 是列表类型
+            if images is not None and not isinstance(images, list):
+                logger.warning(f"images 参数类型错误: {type(images)}, 将设为 None")
+                images = None
+            
+            image_count = len(images) if images else 0
+            logger.info(f"开始生成大纲: topic={topic[:50]}..., mode={mode}, style={style}, images={image_count}")
+            
+            # 1. 准备提示词
+            prompt = self._load_prompt_template(mode, style).format(topic=topic)
+            if images and image_count > 0:
+                prompt += f"\n\n注意：用户提供了 {image_count} 张参考图片，请在生成大纲时考虑这些图片的内容和风格。"
+                logger.debug(f"添加了 {image_count} 张参考图片到提示词")
 
-            if images and len(images) > 0:
-                prompt += f"\n\n注意：用户提供了 {len(images)} 张参考图片，请在生成大纲时考虑这些图片的内容和风格。这些图片可能是产品图、个人照片或场景图，请根据图片内容来优化大纲，使生成的内容与图片相关联。"
-                logger.debug(f"添加了 {len(images)} 张参考图片到提示词")
-
-            # 从配置中获取模型参数
+            # 2. 获取配置和客户端
             active_provider = self.text_config.get('active_provider', 'google_gemini')
             providers = self.text_config.get('providers', {})
             provider_config = providers.get(active_provider, {})
-
             model = provider_config.get('model', 'gemini-2.0-flash-exp')
-            temperature = provider_config.get('temperature', 1.0)
-            max_output_tokens = provider_config.get('max_output_tokens', 8000)
-
-            logger.info(f"调用文本生成 API: model={model}, temperature={temperature}")
-            outline_text = self.client.generate_text(
+            
+            # 3. 调用 API
+            logger.info(f"调用文本生成 API: model={model}")
+            raw_text = self.client.generate_text(
                 prompt=prompt,
                 model=model,
-                temperature=temperature,
-                max_output_tokens=max_output_tokens,
+                temperature=provider_config.get('temperature', 1.0),
+                max_output_tokens=provider_config.get('max_output_tokens', 8000),
                 images=images
             )
+            
+            logger.debug(f"API 返回文本长度: {len(raw_text)} 字符")
 
-            logger.debug(f"API 返回文本长度: {len(outline_text)} 字符")
-            pages = self._parse_outline(outline_text)
-            logger.info(f"大纲解析完成，共 {len(pages)} 页")
-
-            return {
-                "success": True,
-                "outline": outline_text,
-                "pages": pages,
-                "has_images": images is not None and len(images) > 0
-            }
+            # 4. 处理返回结果
+            from backend.schemas import OutlineResponse, PosterData
+            
+            if mode == "poster":
+                return self._process_poster_response(raw_text, mode, images)
+            else:
+                return self._process_outline_response(raw_text, mode, images)
 
         except Exception as e:
-            error_msg = str(e)
-            logger.error(f"大纲生成失败: {error_msg}")
-
-            # 根据错误类型提供更详细的错误信息
-            if "api_key" in error_msg.lower() or "unauthorized" in error_msg.lower() or "401" in error_msg:
-                detailed_error = (
-                    f"API 认证失败。\n"
-                    f"错误详情: {error_msg}\n"
-                    "可能原因：\n"
-                    "1. API Key 无效或已过期\n"
-                    "2. API Key 没有访问该模型的权限\n"
-                    "解决方案：在系统设置页面检查并更新 API Key"
-                )
-            elif "model" in error_msg.lower() or "404" in error_msg:
-                detailed_error = (
-                    f"模型访问失败。\n"
-                    f"错误详情: {error_msg}\n"
-                    "可能原因：\n"
-                    "1. 模型名称不正确\n"
-                    "2. 没有访问该模型的权限\n"
-                    "解决方案：在系统设置页面检查模型名称配置"
-                )
-            elif "timeout" in error_msg.lower() or "连接" in error_msg:
-                detailed_error = (
-                    f"网络连接失败。\n"
-                    f"错误详情: {error_msg}\n"
-                    "可能原因：\n"
-                    "1. 网络连接不稳定\n"
-                    "2. API 服务暂时不可用\n"
-                    "3. Base URL 配置错误\n"
-                    "解决方案：检查网络连接，稍后重试"
-                )
-            elif "rate" in error_msg.lower() or "429" in error_msg or "quota" in error_msg.lower():
-                detailed_error = (
-                    f"API 配额限制。\n"
-                    f"错误详情: {error_msg}\n"
-                    "可能原因：\n"
-                    "1. API 调用次数超限\n"
-                    "2. 账户配额用尽\n"
-                    "解决方案：等待配额重置，或升级 API 套餐"
-                )
-            else:
-                detailed_error = (
-                    f"大纲生成失败。\n"
-                    f"错误详情: {error_msg}\n"
-                    "可能原因：\n"
-                    "1. Text API 配置错误或密钥无效\n"
-                    "2. 网络连接问题\n"
-                    "3. 模型无法访问或不存在\n"
-                    "建议：检查配置文件 text_providers.yaml"
-                )
-
+            logger.exception("大纲生成服务发生未处理异常")
+            # 返回标准的错误结构
             return {
                 "success": False,
-                "error": detailed_error
+                "mode": mode,
+                "error": str(e),
+                "has_images": False
             }
 
+    def _process_poster_response(self, text: str, mode: str, images: Optional[List[bytes]]) -> Dict[str, Any]:
+        """处理海报模式响应"""
+        import json
+        from backend.schemas import PosterData
+        
+        try:
+            # 使用正则提取 JSON
+            json_match = re.search(r'\{[\s\S]*\}', text.strip())
+            if not json_match:
+                raise ValueError("LLM 未返回有效的 JSON 结构")
+            
+            json_str = json_match.group(0)
+            data = json.loads(json_str)
+            
+            # 使用 Pydantic 验证
+            poster_data = PosterData(**data)
+            
+            return {
+                "success": True,
+                "mode": mode,
+                "poster_data": poster_data.model_dump(),
+                "outline": text, # 保留原始文本用于调试
+                "has_images": bool(images)
+            }
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.error(f"海报数据解析失败: {e}\nRaw Text: {text[:200]}...")
+            return {
+                "success": False,
+                "mode": mode,
+                "error": f"生成内容格式错误: {str(e)}",
+                "outline": text
+            }
+        except Exception as e:
+            logger.exception("海报处理未知错误")
+            return {
+                "success": False,
+                "mode": mode,
+                "error": f"处理出错: {str(e)}",
+                "outline": text
+            }
+
+    def _process_outline_response(self, text: str, mode: str, images: Optional[List[bytes]]) -> Dict[str, Any]:
+        """处理普通大纲响应"""
+        pages = self._parse_outline(text)
+        return {
+            "success": True,
+            "mode": mode,
+            "outline": text,
+            "pages": pages,
+            "has_images": bool(images)
+        }
 
 def get_outline_service() -> OutlineService:
     """

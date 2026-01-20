@@ -319,7 +319,9 @@ onMounted(async () => {
     // userImages - 用户上传的参考图片
     store.userImages.length > 0 ? store.userImages : undefined,
     // userTopic - 用户原始输入
-    store.topic
+    store.topic,
+    // style - 风格参数
+    store.style
   )
 })
 </script>

@@ -17,6 +17,46 @@
         <p class="page-subtitle">输入你的创意主题，让 AI 帮你生成爆款标题、正文和封面图</p>
       </div>
 
+      <!-- 创作模式选择 -->
+      <div class="mode-selector">
+        <button 
+          class="mode-btn" 
+          :class="{ active: mode === 'outline' }"
+          @click="mode = 'outline'"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+          图文创作
+        </button>
+        <button 
+          class="mode-btn highlight" 
+          :class="{ active: mode === 'poster' }"
+          @click="mode = 'poster'"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+          致敬经典海报
+        </button>
+      </div>
+
+      <!-- 风格选择 (仅在图文创作模式显示) -->
+      <div v-if="mode === 'outline'" class="style-selector fade-in">
+        <div 
+          class="style-option" 
+          :class="{ active: style === 'sketch' }"
+          @click="style = 'sketch'"
+        >
+          <div class="style-icon sketch-icon">✏️</div>
+          <div class="style-label">Nano Banana</div>
+        </div>
+        <div 
+          class="style-option" 
+          :class="{ active: style === 'classic' }"
+          @click="style = 'classic'"
+        >
+          <div class="style-icon classic-icon">📑</div>
+          <div class="style-label">经典要点</div>
+        </div>
+      </div>
+
       <!-- 主题输入组合框 -->
       <ComposerInput
         ref="composerRef"
@@ -63,6 +103,8 @@ const store = useGeneratorStore()
 
 // 状态
 const topic = ref('')
+const mode = ref<'outline' | 'poster'>('outline')
+const style = ref<'sketch' | 'classic'>('sketch')
 const loading = ref(false)
 const error = ref('')
 const composerRef = ref<InstanceType<typeof ComposerInput> | null>(null)
@@ -91,13 +133,33 @@ async function handleGenerate() {
 
     const result = await generateOutline(
       topic.value.trim(),
+      mode.value,
+      style.value,
       imageFiles.length > 0 ? imageFiles : undefined
     )
 
-    if (result.success && result.pages) {
-      // 设置主题和大纲到 store
+    if (result.success) {
+      // 设置主题到 store
       store.setTopic(topic.value.trim())
-      store.setOutline(result.outline || '', result.pages)
+
+      // 只有在 outline 模式才保存 style
+      if (mode.value === 'outline') {
+        store.style = style.value
+      }
+
+      if (mode.value === 'poster' && result.poster_data) {
+        store.setPosterData(result.poster_data)
+        router.push('/result')
+        return
+      }
+
+      // 默认图文模式
+      if (result.pages) {
+        store.setOutline(result.outline || '', result.pages)
+        // ... (rest of history logic handled below)
+      } else {
+        throw new Error('生成大纲失败：缺少页面数据')
+      }
 
       // 大纲生成成功后，立即创建历史记录
       // 这样即使用户刷新页面或关闭浏览器，大纲也不会丢失
@@ -168,7 +230,95 @@ async function handleGenerate() {
 }
 
 .hero-content {
-  margin-bottom: 36px;
+  margin-bottom: 24px;
+}
+
+
+
+/* Style Selector */
+.style-selector {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.style-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.style-option:hover {
+  opacity: 1;
+  background: rgba(0,0,0,0.02);
+}
+
+.style-option.active {
+  opacity: 1;
+  border-color: var(--primary);
+  background: rgba(255, 36, 66, 0.05);
+}
+
+.style-icon {
+  font-size: 24px;
+}
+
+.style-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.mode-selector {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: white;
+  color: var(--text-sub);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.2s;
+}
+
+.mode-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.mode-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(255, 36, 66, 0.2);
+}
+
+.mode-btn.highlight.active {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .brand-pill {

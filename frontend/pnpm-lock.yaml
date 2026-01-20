@@ -11,6 +11,9 @@ importers:
       axios:
         specifier: ^1.6.0
         version: 1.13.2
+      html-to-image:
+        specifier: ^1.11.13
+        version: 1.11.13
       pinia:
         specifier: ^2.1.0
         version: 2.3.1(typescript@5.9.3)(vue@3.5.24(typescript@5.9.3))
@@ -476,6 +479,9 @@ packages:
   he@1.2.0:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
+
+  html-to-image@1.11.13:
+    resolution: {integrity: sha512-cuOPoI7WApyhBElTTb9oqsawRvZ0rHhaHwghRLlTuffoD1B2aDemlCruLeZrUIIdvG7gs9xeELEPm6PhuASqrg==}
 
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
@@ -981,6 +987,8 @@ snapshots:
       function-bind: 1.1.2
 
   he@1.2.0: {}
+
+  html-to-image@1.11.13: {}
 
   magic-string@0.30.21:
     dependencies:

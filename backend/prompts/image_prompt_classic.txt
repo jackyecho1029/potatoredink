@@ -1,0 +1,38 @@
+Design Requirements:
+
+**Core Style: Classic "Pyramid Principle", Minimalist High-End, Apple-like Aesthetic.**
+
+1.  **Visual Style**:
+    *   **Extremely Clean**: Solid background colors (off-white, light warm gray).
+    *   **Typhography Focused**: The text IS the visual. Use modern, bold sans-serif fonts.
+    *   **Structured Layout**: Use card-style layouts or clear dividing lines.
+    *   **No "Doodles"**: Unlike the sketch style, this should look professional, sharp, and vector-perfect.
+
+2.  **Color Palette**:
+    *   **Restrained**: White background. Black Text. One accent color (e.g., Deep Blue, Emerald Green, or Vibrant Orange).
+    *   **High Contrast**: Ensure perfect readability.
+
+3.  **Composition Requirements**:
+    *   **Key Points**: The content will often be a list of 3-5 items. Render them as a clean list with bullet points or numbered badges.
+    *   **Icons**: Use simple, geometric icons to represent concepts (optional, but keep it minimal).
+    *   **Whitespace**: 50% of the image should be whitespace.
+
+**Specific Page Guidelines**:
+*   **[Cover]**: Large centered Title. Subtitle below. Minimalist decoration.
+*   **[Content]**: Title at top. 3-5 distinct bullet points or cards below.
+*   **[Summary]**: A strong concluding statement or a summary list.
+
+**NEGATIVE PROMPT (What to AVOID):**
+*   **NO** Hand drawn, messy, sketch, doodle lines.
+*   **NO** Realistic photos, complex scenes.
+*   **NO** Clutter, gradients, neon colors.
+
+**Input Content to Render:**
+{page_content}
+
+**Page Type**: {page_type}
+*(Render this content with strict alignment and structure)*
+
+**Original Topic**: {user_topic}
+
+Generate a **vertical (3:4)** image that looks like a **Premium Keynote Slide / Corporate Poster**. Focus on *Structure* and *Clarity*.

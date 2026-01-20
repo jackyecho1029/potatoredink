@@ -27,11 +27,15 @@ def log_request(endpoint: str, data: dict = None):
             if k not in ['images', 'user_images'] and not isinstance(v, bytes)
         }
 
-        # 对图片数据只显示数量
+        # 对图片数据只显示数量 (支持传入列表或已计算的整数)
         if 'images' in data:
-            safe_data['images'] = f"[{len(data['images'])} 张图片]"
+            img_val = data['images']
+            img_count = len(img_val) if isinstance(img_val, list) else img_val
+            safe_data['images'] = f"[{img_count} 张图片]"
         if 'user_images' in data:
-            safe_data['user_images'] = f"[{len(data['user_images'])} 张图片]"
+            uimg_val = data['user_images']
+            uimg_count = len(uimg_val) if isinstance(uimg_val, list) else uimg_val
+            safe_data['user_images'] = f"[{uimg_count} 张图片]"
 
         logger.debug(f"  请求数据: {safe_data}")
 
